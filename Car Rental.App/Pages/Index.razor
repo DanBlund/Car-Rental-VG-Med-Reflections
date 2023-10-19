@@ -1,0 +1,265 @@
+﻿@page "/"
+
+@using Car_Rental.Business.Classes;
+@using Car_Rental.Common.Enums;
+@using Car_Rental.Data.Classes;
+@using Car_Rental.Business.Extensions;
+
+@* Injeserar en instans av BookingProcessor klassen som heter bookProc *@
+@inject BookingProcessor bookProc
+
+<div class="d-flex justify-content-between">
+    <h3 class="d-inline-block">Vehicles</h3>
+    @if (processing == true)
+    {
+        <div class="d-inline-block alert alert-warning processing mb-0 p-2" role="alert">
+            <h6 class="m-0 p-0">Processing...</h6>
+        </div>
+    }
+</div>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th scope="col">Reg #</th>
+            <th scope="col">Make</th>
+            <th scope="col">Vehicle type</th>
+            <th scope="col">Odometer</th>
+            <th scope="col">$ km</th>
+            <th scope="col">$ day</th>
+            <th scope="col">Action</th>
+            <th scope="col">
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var vehicle in bookProc.VehicleGetter())
+        {
+            <tr>
+                <th scope="row">@vehicle.RegNumber</th>
+                <td>@vehicle.Make</td>
+                <td>@vehicle.VehicleType</td>
+                <td>@vehicle.Odometer</td>
+                <td>@vehicle.CostPerKm</td>
+                <td>@vehicle.CostPerDay</td>
+                <td>
+                    <select @bind="selectedCustomer">
+                        <option></option>
+                        @foreach (var customer in bookProc.CustomerGetter())
+                        {
+                            <option value="@customer.FirstName @customer.LastName">@customer.FirstName @customer.LastName</option>
+                        }
+                    </select>
+                </td>
+                @if (vehicle.BookingStatus == BookingStatuses.Free)
+                {
+                    <td>
+                        <div class="d-flex align-items-center">
+                            @if (selectedCustomer == null || selectedCustomer == string.Empty || processing == true)
+                            {
+                                <button type="button" class="btn btn-primary" disabled>Book Car</button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-primary" type="button" @onclick="@(() => Processing(vehicle.Id, vehicle.RegNumber!, vehicle.Odometer))">Book Car</button>
+                            }
+                        </div>
+                    </td>
+                }
+                @if (vehicle.BookingStatus == BookingStatuses.Booked)
+                {
+                    <td><p class="text-danger">Not avaliable</p></td>
+                }
+            </tr>
+        }
+        @* Add new vehicle *@
+        <tr>
+            <td>
+                <input placeholder="Reg #" @bind="reg" />
+            </td>
+            <td>
+                <input placeholder="Make" @bind="make" />
+            </td>
+            <td>
+                <select @bind="type">
+                    <option value="Sedan">Sedan</option>
+                    <option value="Combi">Combi</option>
+                    <option value="Van">Van</option>
+                    <option value="Motorcycle">Motorcycle</option>
+                </select>
+            </td>
+            <td>
+                <input placeholder="Odometer" @bind="odoNull" />
+            </td>
+            <td>
+                <input placeholder="$ km" @bind="costKmNull" />
+            </td>
+            <td>
+                <input placeholder="$ day" @bind="costDayNull" />
+            </td>
+            <td></td>
+            <td>
+                <div class="add-input-div d-flex align-items-center">
+                    @if (reg == string.Empty || make == string.Empty || odoNull == null || costKmNull == null || costDayNull == null)
+                    {
+                        <button class="btn btn-primary align-self-end" type="submit" disabled>New Car</button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-primary align-self-end" type="submit" @onclick="@(() => bookProc.AddVehicle(reg, make, odoNull, type, costKmNull, costDayNull))">New Car</button>
+                    }
+                </div>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3><br />Customers</h3>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th scope="col">SSN</th>
+            <th scope="col">First Name</th>
+            <th scope="col">Last Name</th>
+            <th scope="col"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var customer in bookProc.CustomerGetter())
+        {
+            <tr>
+                <th scope="row">@customer.Ssn</th>
+                <td>@customer.FirstName</td>
+                <td>@customer.LastName</td>
+                <td></td>
+            </tr>
+        }
+
+        @* Add new customer *@
+        <tr>
+            <td>
+                <input placeholder="SSN" @bind="ssnNull" />
+            </td>
+            <td>
+                <input placeholder="First Name" @bind="fName" />
+            </td>
+            <td>
+                <input placeholder="Last Name" @bind="lName" />
+            </td>
+            <td>
+                <div class="add-input-div d-flex align-items-center">
+                    @if (fName == string.Empty || lName == string.Empty || ssnNull == null)
+                    {
+                        <button class="btn btn-primary align-self-end" type="submit" disabled>New Customer</button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-primary align-self-end" type="submit" @onclick="@(() => bookProc.AddCustomer(ssnNull, fName, lName))">New Customer</button>
+                    }
+                </div>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h3><br />Bookings</h3>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th scope="col">Reg #</th>
+            <th scope="col">Customer</th>
+            <th scope="col">Km Rented</th>
+            <th scope="col">Km Returned</th>
+            <th scope="col">Date Rented</th>
+            <th scope="col">Date Returned</th>
+            <th scope="col">Cost</th>
+            <th scope="col">Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var book in bookProc.BookingGetter())
+        {
+            <tr>
+                <th scope="row">@book.RegNumber</th>
+                <td>@book.Customer</td>
+                <td>@book.KmRented</td>
+                @if (book.BookingStatus == BookingStatuses.Booked)
+                {
+                    <td>-</td>
+                }
+                else
+                {
+                    <td>@book.KmReturned</td>
+                }
+                <td>@book.Rented.ToString("MM/dd/yyyy")</td>
+                @if (book.BookingStatus == BookingStatuses.Booked)
+                {
+                    <td>-</td>
+                    <td>-</td>
+                }
+                else
+                {
+
+                    <td>@book.Returned.ToString("MM/dd/yyyy")</td>
+                    <td>@bookProc.CalculateCost(book.RegNumber, book.KmRented, book.KmReturned, book.Rented, book.Returned)</td>
+                }
+                @if (book.BookingStatus == BookingStatuses.Free)
+                {
+                    <td class="text-success">Returned</td>
+                }
+                else
+                {
+                    <td>
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
+                                Return Car
+                            </button>
+                            <form class="dropdown-menu p-4">
+                                <div class="add-input-div">
+                                    <p>Odometer at return</p>
+                                    <input placeholder="@book.KmRented" @bind="odoAtReturn" />
+                                </div>
+                                <div class="add-input-div d-flex align-items-center">
+                                    <button type="button" class="btn btn-primary" @onclick="@(() => bookProc.ReturnBooking(book.Id, book.RegNumber, odoAtReturn))">Return</button>
+                                </div>
+                                @if (odoAtReturn < book.KmRented)
+                                {
+                                    <div class="alert alert-danger" role="alert">
+                                        Odometer at return cannot be less than when rented!
+                                    </div>
+                                }
+                            </form>
+                        </div>
+                    </td>
+                }
+            </tr>
+        }
+    </tbody>
+
+</table>
+
+@code {
+    #region Vehicles
+    string reg = string.Empty;
+    string make = string.Empty;
+    VehicleTypes type = VehicleTypes.Sedan;
+    static int? odoNull = null;
+    static int? costKmNull = null;
+    static int? costDayNull = null;
+    string? selectedCustomer = null;
+    bool processing = false;
+    async void Processing(int id, string regNumber, int odometer)
+    {
+        processing = true;
+        StateHasChanged();
+        await bookProc.AddBooking(id, regNumber, selectedCustomer!, odometer, null, DateTime.Today, default, null, BookingStatuses.Booked);
+        processing = false;
+        StateHasChanged();
+    }
+    #endregion
+
+    static int? ssnNull = null;
+    string fName = string.Empty;
+    string lName = string.Empty;
+
+    int? odoAtReturn = null;
+}
